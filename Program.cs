@@ -9,6 +9,6 @@ builder.Services.AddSqlServer<ContactContext>(connString);
 
 var app = builder.Build();
 
-app.MapGet("/", () => "Hello World!");
+app.MapContactsEndpoints();
 
 app.Run();

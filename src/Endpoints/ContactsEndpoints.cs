@@ -2,7 +2,7 @@ using Microsoft.EntityFrameworkCore;
 
 public static class ContactsEndpoints
 {
-    const string GetGameEndpointName = "GetGame";
+    const string GetContactEndpointName = "GetContact";
 
     public static RouteGroupBuilder MapContactsEndpoints(this WebApplication app)
     {
@@ -10,12 +10,13 @@ public static class ContactsEndpoints
                        .WithParameterValidation();
 
         // GET /contacts
-        group.MapGet("/", async (ContactContext dbContext) =>
-            await dbContext.Contacts
-                     .Include(contact => contact.Genre)
-                     .Select(contact => contact.ToGameSummaryDto())
-                     .AsNoTracking()
-                     .ToListAsync());
+        group.MapGet("/", (ContactContext dbContext) =>
+        {
+
+            var contacts = dbContext.Contacts.ToList();
+            return contacts is null ?
+            Results.NotFound() : Results.Ok(contacts);
+        });
 
         // GET /contacts/1
         group.MapGet("/{id}", async (int id, ContactContext dbContext) =>
@@ -23,37 +24,37 @@ public static class ContactsEndpoints
             Contact? contact = await dbContext.Contacts.FindAsync(id);
 
             return contact is null ?
-                Results.NotFound() : Results.Ok(contact.ToGameDetailsDto());
+                Results.NotFound() : Results.Ok(contact.ToContactDetails());
         })
-        .WithName(GetGameEndpointName);
+        .WithName(GetContactEndpointName);
 
         // POST /contacts
-        group.MapPost("/", async (CreateGameDto newGame, ContactContext dbContext) =>
+        group.MapPost("/", async (CreateContactDto newContact, ContactContext dbContext) =>
         {
-            Game contact = newGame.ToEntity();
+            Contact contact = newContact.ToEntityCreate();
 
             dbContext.Contacts.Add(contact);
             await dbContext.SaveChangesAsync();
 
             return Results.CreatedAtRoute(
-                GetGameEndpointName,
+                GetContactEndpointName,
                 new { id = contact.Id },
-                contact.ToGameDetailsDto());
+                contact.ToContactDetails());
         });
 
         // PUT /contacts
-        group.MapPut("/{id}", async (int id, UpdateGameDto updatedGame, ContactContext dbContext) =>
+        group.MapPut("/{id}", async (int id, UpdateContactDto updatedContact, ContactContext dbContext) =>
         {
-            var existingGame = await dbContext.Contacts.FindAsync(id);
+            var existingContact = await dbContext.Contacts.FindAsync(id);
 
-            if (existingGame is null)
+            if (existingContact is null)
             {
                 return Results.NotFound();
             }
 
-            dbContext.Entry(existingGame)
+            dbContext.Entry(existingContact)
                      .CurrentValues
-                     .SetValues(updatedGame.ToEntity(id));
+                     .SetValues(updatedContact.ToEntityUpdate(id));
 
             await dbContext.SaveChangesAsync();
 
@@ -72,14 +73,32 @@ public static class ContactsEndpoints
 
         // PATCH /contacts/{id}/favorite 
 
-        group.MapPatch("/{id}/favorite/", (int id) => {
+        group.MapPatch("/{id}/favorite/", async (int id, ContactContext dbContext) =>
+        {
+            var existingContact = await dbContext.Contacts.FindAsync(id);
 
+            if (existingContact is null)
+            {
+                return Results.NotFound();
+            }
+
+            existingContact.IsFavorite = !existingContact.IsFavorite;
+
+            await dbContext.SaveChangesAsync();
+
+            return Results.NoContent();
         });
 
         // GET /contacts/favorites - Lista contatos marcados como favoritos.
 
-        group.MapGet("/favorites/", () => {
+        group.MapGet("/favorites/", (ContactContext dbContext) =>
+        {
+            var contacts = dbContext.Contacts
+            .Where(contact => contact.IsFavorite == true)
+            .ToList();
 
+            return contacts is null ?
+            Results.NotFound() : Results.Ok(contacts);
         });
 
 

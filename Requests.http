@@ -1,0 +1,32 @@
+GET http://localhost:5118/contacts
+###
+GET http://localhost:5118/contacts/1
+###
+POST http://localhost:5118/contacts
+Content-Type: application/json
+
+{
+  "Name": "Carlos Pereira",
+  "Email": "carlos.pereira@example.com",
+  "Phone": "(31) 99876-5432",
+  "Address": "Avenida Central, 789, Belo Horizonte, MG, 30130-010",
+  "IsFavorite": false
+}
+###
+PUT http://localhost:5118/contacts/3
+Content-Type: application/json
+
+{
+  "Name": "Mariana Santos",
+  "Email": "mariana.santos@example.com",
+  "Phone": "(21) 98765-4321",
+  "Address": "Rua Nova, 456, Rio de Janeiro, RJ, 22010-020",
+  "IsFavorite": true
+}
+###
+DELETE http://localhost:5118/contacts/2
+###
+PATCH http://localhost:5118/contacts/1/favorite 
+###
+GET http://localhost:5118/contacts/favorites 
+###
